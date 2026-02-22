@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+pandas
+SQLAlchemy
+pydantic
+matplotlib==3.8.2
+mplsoccer==1.2.2
+plotly
+python-multipart

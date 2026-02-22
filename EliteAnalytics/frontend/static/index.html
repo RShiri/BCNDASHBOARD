@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elite Barca Analytics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        /* Barcelona Deep Dark Theme with Glassmorphism */
+        body {
+            background-color: #0d0d1a;
+            background-image: radial-gradient(circle at top left, #1a000a, transparent 40%),
+                radial-gradient(circle at bottom right, #001133, transparent 40%);
+            color: #e2e8f0;
+            font-family: 'Inter', -apple-system, sans-serif;
+            min-height: 100vh;
+            margin: 0;
+            background-attachment: fixed;
+        }
+
+        /* Glassmorphism Classes */
+        .glass-panel {
+            background: rgba(26, 26, 46, 0.6);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 1rem;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .glass-header {
+            background: rgba(13, 13, 26, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Barca Accent Colors */
+        .text-blaugrana {
+            color: #a50044;
+        }
+
+        .text-blau-blue {
+            color: #004d98;
+        }
+
+        .text-gold {
+            color: #edbb00;
+        }
+
+        .bg-blaugrana {
+            background-color: #a50044;
+        }
+
+        .bg-blau-blue {
+            background-color: #004d98;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #a50044 0%, #004d98 100%);
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(165, 0, 68, 0.4);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+
+<body class="flex h-screen overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside
+        class="w-72 flex-shrink-0 glass-panel border-r border-t-0 border-b-0 border-l-0 rounded-none z-20 flex flex-col">
+        <div class="p-6 border-b border-gray-800">
+            <h1
+                class="text-2xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-[#edbb00] to-[#ffffff]">
+                ELITE<br>BARCA ANALYTICS
+            </h1>
+            <p class="text-xs text-gray-400 mt-1 uppercase tracking-widest">Pro Scouting Dashboard</p>
+        </div>
+
+        <div class="p-6 flex-grow">
+            <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Select Match</h2>
+            <select id="match-selector"
+                class="w-full bg-black bg-opacity-40 border border-gray-700 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-colors">
+                <option value="" disabled selected>Loading matches...</option>
+            </select>
+
+            <div class="mt-8">
+                <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Controls</h2>
+                <div class="space-y-2">
+                    <button
+                        class="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white hover:bg-opacity-5 rounded transition-colors active">Match
+                        Summary</button>
+                    <button
+                        class="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white hover:bg-opacity-5 rounded transition-colors">Player
+                        Percentiles</button>
+                    <button
+                        class="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white hover:bg-opacity-5 rounded transition-colors">Team
+                        Sequences</button>
+                </div>
+            </div>
+
+            <div class="mt-8">
+                <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Controls</h2>
+                <div class="space-y-2">
+                    <button
+                        class="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white hover:bg-opacity-5 rounded transition-colors active">Match
+                        Summary</button>
+                    <button
+                        class="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white hover:bg-opacity-5 rounded transition-colors">Player
+                        Percentiles</button>
+                    <button
+                        class="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white hover:bg-opacity-5 rounded transition-colors">Team
+                        Sequences</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-6 border-t border-gray-800">
+            <button id="export-pdf"
+                class="btn-primary w-full py-3 rounded-lg text-sm font-semibold flex justify-center items-center space-x-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                </svg>
+                <span>Generate PDF Report</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-grow flex flex-col overflow-y-auto" id="dashboard-content">
+        <!-- Top Sticky Header KPIs -->
+        <header class="glass-header sticky top-0 z-10 px-8 py-4 flex justify-between items-center">
+            <div id="match-scoreline" class="text-3xl font-black tracking-tight flex items-center space-x-4">
+                <span id="home-name" class="text-gray-400">Home</span>
+                <span id="score-text" class="text-white px-4 py-1 glass-panel text-2xl">-</span>
+                <span id="away-name" class="text-gray-400">Away</span>
+            </div>
+
+            <div class="flex space-x-6 text-right">
+                <div>
+                    <div class="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Total xG</div>
+                    <div id="kpi-xg" class="text-xl font-bold text-white">0.00 - 0.00</div>
+                </div>
+                <div>
+                    <div class="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Possession</div>
+                    <div id="kpi-poss" class="text-xl font-bold text-white">0% - 0%</div>
+                </div>
+                <div>
+                    <div class="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Field Tilt</div>
+                    <div id="kpi-tilt" class="text-xl font-bold text-[#edbb00]">0% - 0%</div>
+                </div>
+                <div>
+                    <div class="text-[10px] text-gray-400 uppercase tracking-widest font-bold">PPDA (Pressing)</div>
+                    <div id="kpi-ppda" class="text-xl font-bold text-red-500">0.0 - 0.0</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dashboard Grid -->
+        <div class="p-8 space-y-8 pb-20 max-w-[1600px] mx-auto w-full">
+
+            <!-- Shot Maps (Full Width) -->
+            <div class="glass-panel p-2 flex flex-col min-h-[600px]">
+                <div
+                    class="px-5 pt-4 pb-4 flex justify-between items-center border-b border-gray-800 bg-black bg-opacity-20 rounded-t-lg">
+                    <h3 class="font-bold text-lg text-white">Shot Maps</h3>
+                    <div class="flex space-x-6">
+                        <label class="flex items-center space-x-2 text-sm text-gray-300 cursor-pointer">
+                            <input type="radio" name="shotmap_overlay" value="shot_map_ws" checked
+                                class="form-radio text-blaugrana focus:ring-blaugrana bg-black border-gray-600">
+                            <span>WhoScored xG</span>
+                        </label>
+                    </div>
+                </div>
+                <div id="shotmap-container" class="flex-grow w-full relative">
+                    <div class="absolute inset-0 flex items-center justify-center text-gray-500 text-sm italic"
+                        id="shotmap-loading">Loading shot maps...</div>
+                </div>
+            </div>
+
+            <!-- Pass Explorer Maps (Full Width) -->
+            <div class="glass-panel p-2 flex flex-col min-h-[600px]">
+                <div
+                    class="px-5 pt-4 pb-4 flex justify-between items-center border-b border-gray-800 bg-black bg-opacity-20 rounded-t-lg">
+                    <h3 class="font-bold text-lg text-white">Pass & Dribble Maps</h3>
+                    <div class="flex space-x-6">
+                        <label class="flex items-center space-x-2 text-sm text-gray-300 cursor-pointer">
+                            <input type="radio" name="passmap_overlay" value="total" checked
+                                class="form-radio text-blaugrana focus:ring-blaugrana bg-black border-gray-600">
+                            <span>Total Passes</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-sm text-gray-300 cursor-pointer">
+                            <input type="radio" name="passmap_overlay" value="final_third"
+                                class="form-radio text-blaugrana focus:ring-blaugrana bg-black border-gray-600">
+                            <span>Final Third Entries</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-sm text-[#edbb00] font-bold cursor-pointer">
+                            <input type="radio" name="passmap_overlay" value="progressive"
+                                class="form-radio text-amber-500 focus:ring-amber-500 bg-black border-gray-600">
+                            <span>Progressive Passes</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-sm text-gray-300 cursor-pointer">
+                            <input type="radio" name="passmap_overlay" value="dribbles"
+                                class="form-radio text-blaugrana focus:ring-blaugrana bg-black border-gray-600">
+                            <span>Dribbles</span>
+                        </label>
+                    </div>
+                </div>
+                <div id="passmap-container" class="flex-grow w-full relative">
+                    <div class="absolute inset-0 flex items-center justify-center text-gray-500 text-sm italic"
+                        id="passmap-loading">Loading pass maps...</div>
+                </div>
+            </div>
+
+            <!-- Passing Network (Full Width, Inner 2-col) -->
+            <div class="glass-panel p-2 flex flex-col">
+                <div class="px-5 pt-4 pb-2 flex justify-between items-center border-b border-gray-800">
+                    <h3 class="font-bold text-lg text-white">Passing Network</h3>
+                    <label class="flex items-center space-x-2 text-xs text-gray-400 cursor-pointer">
+                        <input type="checkbox" id="prog-passes-only"
+                            class="form-checkbox bg-black border-gray-600 text-blaugrana rounded">
+                        <span>Progressive passes only</span>
+                    </label>
+                </div>
+                <div id="network-container" class="w-full relative min-h-[400px]">
+                    <div class="absolute inset-0 flex items-center justify-center text-gray-500 text-sm italic"
+                        id="network-loading">Waiting for match selection...</div>
+                </div>
+            </div>
+
+            <!-- Momentum Graph -->
+            <div class="glass-panel p-2 flex flex-col">
+                <div class="px-5 pt-4 pb-0 flex justify-between items-center bg-black bg-opacity-20 rounded-t-lg">
+                    <h3 class="font-bold text-lg text-white">Momentum & Danger Level (xG + xT)</h3>
+                </div>
+                <div id="momentum-container" class="w-full h-[350px]"></div>
+            </div>
+
+            <!-- Player Performance Matrix -->
+            <div class="glass-panel p-2 overflow-hidden flex flex-col">
+                <div class="px-5 py-4 border-b border-gray-800 bg-black bg-opacity-20">
+                    <h3 class="font-bold text-lg text-white">Player Performance Matrix</h3>
+                    <p class="text-xs text-gray-400">Calculated from raw event data.</p>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-gray-300">
+                        <thead class="text-xs text-gray-400 uppercase bg-black bg-opacity-40 border-b border-gray-800">
+                            <tr>
+                                <th class="px-6 py-4">Player</th>
+                                <th class="px-6 py-4">Team</th>
+                                <th class="px-6 py-4">xG</th>
+                                <th class="px-6 py-4">xT Added</th>
+                                <th class="px-6 py-4">Passes</th>
+                                <th class="px-6 py-4">Prog. Passes</th>
+                            </tr>
+                        </thead>
+                        <tbody id="player-table-body">
+                            <tr>
+                                <td colspan="6" class="px-6 py-8 text-center text-gray-500 italic">No player stats
+                                    loaded</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Radar Modal (Hidden by default) -->
+    <div id="radar-modal"
+        class="fixed inset-0 bg-black bg-opacity-80 backdrop-blur-sm z-50 hidden flex items-center justify-center">
+        <div class="glass-panel w-[600px] p-6 relative">
+            <button id="close-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white">&times;</button>
+            <h3 id="modal-player-name"
+                class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400 mb-4">
+                Player Name</h3>
+            <div id="radar-container" class="w-full h-[400px]"></div>
+        </div>
+    </div>
+
+    <!-- JS Logic -->
+    <script src="js/app.js?v=3.0"></script>
+</body>
+
+</html>
