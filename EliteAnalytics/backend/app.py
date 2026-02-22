@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
@@ -22,6 +23,10 @@ _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PROJECT_ROOT = os.path.dirname(_ROOT)
 app.mount("/static", StaticFiles(directory=os.path.join(_ROOT, "frontend", "static")), name="static")
 app.mount("/assets", StaticFiles(directory=os.path.join(PROJECT_ROOT, "assets")), name="assets")
+
+@app.get("/")
+def read_root():
+    return RedirectResponse(url="/static/index.html")
 
 def get_db():
     db = get_session()
