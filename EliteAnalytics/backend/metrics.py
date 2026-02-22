@@ -4,15 +4,20 @@ def calculate_xg(x_ws, y_ws, is_penalty=False, is_big_chance=False, body_part="U
     """
     Calculates expected goals for a shot using WhoScored coordinates (0-100 x 0-100).
     Penalties are fixed at 0.76. Big chances get a massive multiplier.
+    Aligns with the 'True' formula from shotmap_whoscored.py.
     """
     if is_penalty:
         return 0.76
 
-    # Convert coordinates to Statsbomb format (0-120 x 0-80) where the goal is at x=120, y=40
-    # WhoScored: x is 0-100, y is 0-100.
-    # From earlier logic in shotmap_whoscored:
-    x_sb = x_ws * 1.20
-    # y_sb = 80 - y_ws * 0.80 (In original code we had flipped Y, let's just stick to the distance calc)
+    # Piecewise-linear WhoScored x → StatsBomb x using calibration points
+    if x_ws <= 50:
+        x_sb = x_ws * (60.0 / 50.0)
+    elif x_ws <= 89:
+        x_sb = 60.0 + (x_ws - 50) * (48.0 / 39.0)
+    else:
+        x_sb = 108.0 + (x_ws - 89) * (12.0 / 11.0)
+
+    # 0.80 multiplier on the Y axis
     y_sb = 80 - y_ws * 0.80
     
     goal_x, goal_y = 120.0, 40.0
@@ -23,8 +28,8 @@ def calculate_xg(x_ws, y_ws, is_penalty=False, is_big_chance=False, body_part="U
     half_goal = 4.0
     angle = math.atan2(half_goal, distance)
     
-    # Base geometry xG
-    base_xg = (angle / (math.pi / 2)) * (1 / (1 + (distance / 20)**2))
+    # Base geometry xG (matching shotmap_whoscored)
+    base_xg = (angle / (math.pi / 2)) * (1 / (1 + distance / 30))
     
     if body_part == "Header":
         base_xg *= 0.4
