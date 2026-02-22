@@ -160,7 +160,7 @@ function renderPassMaps() {
                 <img src="/assets/png/${currentMatchId}_home_progressive_passes.png" onerror="this.src='/assets/png/placeholder.png'" class="w-full h-auto max-h-[500px] object-contain mx-auto rounded shadow-lg">
             </div>
             <div>
-                <img src="/assets/${currentMatchId}_away_progressive_passes.png" onerror="this.src='/assets/placeholder.png'" class="w-full h-auto max-h-[500px] object-contain mx-auto rounded shadow-lg">
+                <img src="/assets/png/${currentMatchId}_away_progressive_passes.png" onerror="this.src='/assets/png/placeholder.png'" class="w-full h-auto max-h-[500px] object-contain mx-auto rounded shadow-lg">
             </div>
         </div>`;
     } else if (overlayType === "dribbles") {
